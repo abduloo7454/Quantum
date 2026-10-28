@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quantum Computing</title>
+<meta name="description" content="Quantum Computing: the main topics and how they connect.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{ --ink:#1b2230; --muted:#5f6b7a; --rule:#e2e6ec; --bg:#ffffff; --tint:#f4f6f9; --link:#2a6fd6; }
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0; background:var(--bg); color:var(--ink); font:17px/1.6 "Inter", -apple-system, "Segoe UI", Helvetica, Arial, sans-serif}
+a{color:var(--link); text-decoration:none}
+a:hover{text-decoration:underline}
+a:focus-visible{outline:2px solid var(--link); outline-offset:3px; border-radius:2px}
+.wrap{max-width:960px; margin:0 auto; padding:0 20px}
+
+.top{padding:20px 0; font-size:15px}
+header{padding:56px 0 44px}
+h1{font-size:clamp(44px,8vw,80px); line-height:1.02; letter-spacing:-.03em; font-weight:700; margin:0 0 16px}
+.intro{font-size:19px; color:var(--muted); max-width:56ch; margin:0}
+
+h2{font-size:15px; font-weight:600; color:var(--muted); margin:0 0 16px}
+.topics{display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:16px; margin-bottom:64px}
+.topic{border:1px solid var(--rule); border-radius:6px; padding:20px 20px 18px; display:flex; flex-direction:column; background:#fff}
+.topic h3{font-size:21px; font-weight:600; line-height:1.3; margin:0 0 8px}
+.topic h3 a{color:var(--ink)}
+.topic p{font-size:15.5px; color:var(--muted); margin:0}
+.topic .rel{margin-top:auto; padding-top:14px; font-size:13.5px; color:var(--muted)}
+.soon{font-size:12.5px; font-weight:600; color:#7a5c00; background:#fff3cd; border-radius:3px; padding:1px 7px; margin-left:6px; vertical-align:2px}
+
+.map{background:var(--tint); border-radius:6px; padding:28px; margin-bottom:64px}
+.map p{margin:0; color:var(--muted)}
+
+/* floating qubits in the top third of the page */
+.qubits{position:absolute; top:0; left:0; width:100%; height:33vh; min-height:260px; z-index:0; pointer-events:none;
+  -webkit-mask-image:linear-gradient(to bottom,#000 55%,transparent); mask-image:linear-gradient(to bottom,#000 55%,transparent)}
+.wrap{position:relative; z-index:1}
+
+footer{border-top:1px solid var(--rule); padding:24px 0 40px; font-size:14px; color:var(--muted)}
+
+@media (max-width:520px){ .wrap{padding:0 16px} header{padding:32px 0 28px} .map{padding:20px} }
+</style>
+</head>
+<body>
+<canvas class="qubits" id="qubits" aria-hidden="true"></canvas>
+<div class="wrap">
+  <div class="top"><a href="https://abduloo7454.github.io/">← Abdullah</a></div>
+
+  <header>
+    <h1>Quantum Computing</h1>
+    <p class="intro">The main ideas of quantum computing, one topic at a time, and how they connect to each other.</p>
+  </header>
+
+  <main>
+    <h2>Topics</h2>
+    <div class="topics" id="topics"></div>
+
+    <h2>How the topics connect</h2>
+    <div class="map"><p>A visual map of the links between these topics will appear here.</p></div>
+  </main>
+
+  <footer>© <span id="yr">2026</span> Abdullah</footer>
+</div>
+
+<script src="topics.js"></script>
+<script>
+const byId = Object.fromEntries(TOPICS.map(t => [t.id, t]));
+document.getElementById('topics').innerHTML = TOPICS.map(t => {
+  const title = t.page ? `<a href="${t.page}">${t.title}</a>` : `${t.title}<span class="soon">Soon</span>`;
+  const rel = t.related.filter(id => byId[id]).map(id => byId[id].title);
+  return `<article class="topic" id="${t.id}">
+    <h3>${title}</h3>
+    <p>${t.summary}</p>
+    ${rel.length ? `<div class="rel">Builds on: ${rel.join(', ')}</div>` : ''}
+  </article>`;
+}).join('');
+document.getElementById('yr').textContent = new Date().getFullYear();
+
+// Floating qubits: small Bloch spheres that drift and precess in the top third of the page.
+(() => {
+  const cv = document.getElementById('qubits'), ctx = cv.getContext('2d');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let W, H, dpr, qs = [];
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const COLORS = ['42,111,214', '111,76,214', '22,150,160'];
+  function setup() {
+    dpr = Math.min(devicePixelRatio || 1, 2);
+    W = cv.clientWidth; H = cv.clientHeight;
+    cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const n = Math.max(6, Math.round(W / 90));
+    qs = Array.from({length: n}, () => ({
+      x: rand(0, W), y: rand(0, H), r: rand(12, 30),
+      vx: rand(-.15, .15), vy: rand(-.08, .08),
+      theta: rand(.3, 2.8), phi: rand(0, 6.28), w: rand(.004, .012) * (Math.random() < .5 ? -1 : 1),
+      bob: rand(0, 6.28), c: COLORS[Math.floor(Math.random() * COLORS.length)], a: rand(.25, .5),
+    }));
+  }
+  function draw(q) {
+    const {x, y, r, c, a} = q;
+    const yy = y + Math.sin(q.bob) * 4;
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = `rgba(${c},${a})`;
+    ctx.beginPath(); ctx.arc(x, yy, r, 0, Math.PI * 2); ctx.stroke();                 // sphere
+    ctx.strokeStyle = `rgba(${c},${a * .55})`;
+    ctx.beginPath(); ctx.ellipse(x, yy, r, r * .3, 0, 0, Math.PI * 2); ctx.stroke();  // equator
+    // state vector: theta from the north pole, phi around the vertical axis (simple oblique view)
+    const sx = Math.sin(q.theta) * Math.cos(q.phi), sy = Math.sin(q.theta) * Math.sin(q.phi), sz = Math.cos(q.theta);
+    const px = x + r * sx, py = yy - r * (sz * .95 - sy * .3);
+    ctx.strokeStyle = `rgba(${c},${Math.min(1, a + .25)})`; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.moveTo(x, yy); ctx.lineTo(px, py); ctx.stroke();
+    ctx.fillStyle = `rgba(${c},${Math.min(1, a + .3)})`;
+    ctx.beginPath(); ctx.arc(px, py, 2.4, 0, Math.PI * 2); ctx.fill();
+  }
+  function frame() {
+    ctx.clearRect(0, 0, W, H);
+    for (const q of qs) {
+      if (!reduce) {
+        q.x += q.vx; q.y += q.vy; q.phi += q.w; q.bob += .01;
+        if (q.x < -40) q.x = W + 40; if (q.x > W + 40) q.x = -40;
+        if (q.y < -20 || q.y > H + 20) q.vy *= -1;
+      }
+      draw(q);
+    }
+    if (!reduce) raf = requestAnimationFrame(frame);
+  }
+  let raf;
+  setup(); frame();
+  addEventListener('resize', () => { cancelAnimationFrame(raf); setup(); frame(); });
+  document.addEventListener('visibilitychange', () => {
+    if (reduce) return;
+    if (document.hidden) cancelAnimationFrame(raf); else raf = requestAnimationFrame(frame);
+  });
+})();
+</script>
+</body>
+</html>
