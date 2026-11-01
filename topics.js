@@ -33,9 +33,9 @@ const TOPICS = [
   {
     id: "qec",
     title: "Quantum error correction",
-    summary: "Ways to protect quantum information from noise by spreading one logical qubit across many physical qubits.",
+    summary: "How quantum errors are handled, from noise to correction: suppression, mitigation, detection and error correction in one interactive tree.",
     related: ["qubits", "gates"],
-    page: "",
+    page: "error-handling.html",
   },
   {
     id: "qml",
