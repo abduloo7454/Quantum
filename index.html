@@ -44,6 +44,19 @@ h2{font-size:15px; font-weight:600; color:var(--muted); margin:0 0 16px}
 
 footer{border-top:1px solid var(--rule); padding:24px 0 40px; font-size:14px; color:var(--muted)}
 
+/* blue gradient page */
+html{background:#2a6fd6}
+body{background:linear-gradient(165deg,#0a1d4a 0%,#123c8c 45%,#2a6fd6 100%); color:#fff; min-height:100vh}
+.top a{color:#cfe0ff}
+h1{color:#fff}
+.intro{color:#d6e4ff}
+h2{color:#b9cff7}
+.topic{border-color:rgba(255,255,255,.18); box-shadow:0 6px 24px rgba(5,20,60,.25); color:var(--ink)}
+.map{background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.2)}
+.map p{color:#e3ecff}
+footer{border-top-color:rgba(255,255,255,.2); color:#c4d6f7}
+.qubits{-webkit-mask-image:none; mask-image:none; height:100vh; position:fixed}
+
 @media (max-width:520px){ .wrap{padding:0 16px} header{padding:32px 0 28px} .map{padding:20px} }
 </style>
 </head>
@@ -89,7 +102,7 @@ document.getElementById('yr').textContent = new Date().getFullYear();
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   let W, H, dpr, qs = [];
   const rand = (a, b) => a + Math.random() * (b - a);
-  const COLORS = ['42,111,214', '111,76,214', '22,150,160'];
+  const COLORS = ['190,215,255', '205,190,255', '160,235,235'];
   function setup() {
     dpr = Math.min(devicePixelRatio || 1, 2);
     W = cv.clientWidth; H = cv.clientHeight;
@@ -99,7 +112,7 @@ document.getElementById('yr').textContent = new Date().getFullYear();
       x: rand(0, W), y: rand(0, H), r: rand(12, 30),
       vx: rand(-.15, .15), vy: rand(-.08, .08),
       theta: rand(.3, 2.8), phi: rand(0, 6.28), w: rand(.004, .012) * (Math.random() < .5 ? -1 : 1),
-      bob: rand(0, 6.28), c: COLORS[Math.floor(Math.random() * COLORS.length)], a: rand(.25, .5),
+      bob: rand(0, 6.28), c: COLORS[Math.floor(Math.random() * COLORS.length)], a: rand(.3, .6),
     }));
   }
   function draw(q) {
