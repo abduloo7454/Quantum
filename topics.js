@@ -36,6 +36,7 @@ const TOPICS = [
     summary: "How quantum errors are handled, from noise to correction: suppression, mitigation, detection and error correction in one interactive tree.",
     related: ["qubits", "gates"],
     page: "error-handling.html",
+    pageTitle: "Quantum Error Handling",
   },
   {
     id: "qml",
