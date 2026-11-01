@@ -87,6 +87,33 @@ li.root > .node > button{font-size:18px; background:var(--ink); color:#fff; bord
 li.root > .node > button .tw{color:#fff}
 li > ul[hidden]{display:none}
 
+/* visual tree */
+.tv{display:grid; grid-template-columns:minmax(0,1fr) 290px; gap:20px; align-items:start}
+.tv-scroll{overflow-x:auto; border:1px solid var(--line); border-radius:10px; background:var(--tint)}
+.tv-canvas{position:relative; margin:20px}
+.tv-links{position:absolute; inset:0; overflow:visible; pointer-events:none}
+.tv-links path{fill:none; stroke-width:2.5; stroke-linecap:round; opacity:.55}
+.tv-node{position:absolute; box-sizing:border-box; display:flex; align-items:center; gap:8px; padding:6px 10px; border-radius:8px;
+  background:#fff; border:1px solid var(--line); border-left:5px solid var(--c,#999); font:600 12.5px/1.3 "Inter",sans-serif; color:var(--ink);
+  cursor:pointer; text-align:left; transition:box-shadow .15s, transform .15s}
+.tv-node:hover{box-shadow:0 3px 12px rgba(20,30,60,.12)}
+.tv-node.sel{box-shadow:0 0 0 3px color-mix(in srgb, var(--c) 35%, transparent)}
+.tv-node.root{background:var(--ink); color:#fff; border-color:var(--ink); font-size:14.5px}
+.tv-node .lbl{flex:1; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden}
+.tv-node .tg{flex:none; width:20px; height:20px; border-radius:50%; display:grid; place-items:center; font:700 13px/1 var(--mono);
+  background:color-mix(in srgb, var(--c) 15%, #fff); color:var(--c)}
+.tv-node.root .tg{background:rgba(255,255,255,.18); color:#fff}
+.tv-node .dot{flex:none; width:8px; height:8px; border-radius:50%; background:var(--c)}
+.tv-panel{position:sticky; top:16px; border:1px solid var(--line); border-radius:10px; padding:18px; background:#fff; min-height:180px}
+.tv-panel h3{font-size:19px; line-height:1.3; margin:0 0 8px}
+.tv-panel .meta{display:flex; flex-wrap:wrap; gap:6px; margin:0 0 12px; align-items:center}
+.tv-panel .ep{font-size:12.5px; color:var(--muted)}
+.tv-panel .dtxt{font-size:15px; color:var(--ink2)}
+.tv-panel .dtxt b{color:var(--ink)}
+.tv-panel .path{font-size:12.5px; color:var(--muted); margin:0 0 6px}
+.tv-hint{color:var(--muted); font-size:15px}
+@media (max-width:900px){ .tv{grid-template-columns:1fr} .tv-panel{position:static} }
+
 /* comparison */
 .scroll{overflow-x:auto}
 table.cmp{border-collapse:collapse; width:100%; min-width:640px; font-size:14.5px}
@@ -137,95 +164,14 @@ footer{border-top:1px solid var(--line); padding:24px 0 40px; font-size:14px; co
 
   <section>
     <h2>The tree</h2>
-    <p class="sub">Click a node with ▸ to open it. Each description says what the method does and what it costs.</p>
-    <div class="controls"><button id="openAll" type="button">Expand all</button><button id="closeAll" type="button">Collapse to first level</button></div>
-    <div class="tree" id="tree">
-  <ul>
-  <li class="root" data-c="noise"><div class="node"><button aria-expanded="true"><span class="tw">▾</span>Quantum noise and errors</button><span class="n">Ep 1</span><span class="desc"><b>Noise</b> is the physical disturbance (thermal, crosstalk, imperfect pulses); an <b>error</b> is the wrong step it causes. Unlike a classical bit, a qubit can drift by any continuous amount in amplitude and phase. Noise is modelled by quantum channels: amplitude damping (T1), dephasing (T2), and the Pauli channel (X, Y, Z with probabilities). Everything below is a way to live with it.</span></div>
-    <ul>
-      <li data-c="noise"><div class="node"><button aria-expanded="false"><span class="tw">▸</span>Kinds of error</button><span class="tags"><span class="badge n">context</span></span></div>
-        <ul hidden>
-          <li data-c="noise"><div class="node"><button class="leaf"><span class="tw">·</span>By stage: preparation, gates, readout (SPAM vs circuit)</button><span class="desc">SPAM errors are handled separately from errors inside the circuit; the two toolsets do not interfere.</span></div></li>
-          <li data-c="noise"><div class="node"><button class="leaf"><span class="tw">·</span>By accumulation: coherent vs incoherent</button><span class="desc">Coherent = an unwanted unitary (over-rotation), adds up fast. Incoherent = a non-unitary channel, adds in quadrature. A recurring theme: convert coherent into incoherent.</span></div></li>
-          <li data-c="noise"><div class="node"><button class="leaf"><span class="tw">·</span>By channel: T1 relaxation, dephasing, Pauli</button><span class="desc">T1 on IBM hardware is a few hundred µs, while two-qubit gates take from tens of nanoseconds up to about 100 ns, so idle time matters more than gate count for relaxation. Pauli channels can be created deliberately, which later methods exploit.</span></div></li>
-        </ul>
-      </li>
-
-      <li data-c="sup"><div class="node"><button aria-expanded="true"><span class="tw">▾</span>1. Error suppression</button><span class="n">Ep 2</span><span class="tags"><span class="badge n">NEITHER</span></span><span class="desc">Change the circuit so errors occur less, differently, or accumulate less. Happens <b>while the circuit runs</b>, by inserting extra single-qubit gates. No error is ever detected or corrected.</span></div>
-        <ul>
-          <li data-c="sup"><div class="node"><button class="leaf"><span class="tw">·</span>Dynamical decoupling (XX, XY4, XY8)</button><span class="tags"><span class="badge n">NEITHER</span></span><span class="desc">Insert X (or XY) pulses during idle time so unknown phase drift in the first half is undone in the second half. Works like a frequency filter on the noise. Best for long idle periods; for short idles it can lower fidelity because the inserted gates have their own error. Example: fidelity after 100 two-qubit-gate durations, 0.58 without DD, 0.83 with.</span></div></li>
-          <li data-c="sup"><div class="node"><button class="leaf"><span class="tw">·</span>Pauli twirling</button><span class="tags"><span class="badge n">NEITHER</span></span><span class="desc">Wrap each two-qubit gate in random Paulis chosen so the logical effect is unchanged. On average this turns any noise channel into a Pauli channel: errors become classical randomness over X, Y, Z instead of coherent build-up. Often called error <em>shaping</em> rather than suppression, and it is what makes ZNE and PEC predictable.</span></div></li>
-        </ul>
-      </li>
-
-      <li data-c="mit"><div class="node"><button aria-expanded="true"><span class="tw">▾</span>2. Error mitigation</button><span class="n">Ep 3</span><span class="tags"><span class="badge n">NEITHER</span></span><span class="desc">Accept that the state is noisy; build a better <b>estimator</b> of the ideal expectation value from many noisy shots. Happens <b>after measurement</b>, in classical post-processing plus extra circuit variants. No individual error is seen or fixed, and the quantum state is not improved.</span></div>
-        <ul>
-          <li data-c="mit"><div class="node"><button aria-expanded="false"><span class="tw">▸</span>Readout mitigation</button><span class="desc">Targets the measurement step only.</span></div>
-            <ul hidden>
-              <li data-c="mit"><div class="node"><button class="leaf"><span class="tw">·</span>M3 (matrix-free measurement mitigation)</button><span class="tags"><span class="badge n">NEITHER</span></span><span class="desc">Learn how readouts are misassigned, but only on the subspace of bitstrings actually observed (31 × 31 instead of 2¹⁰ × 2¹⁰ in the GHZ example), then invert. Raw 66% of shots in the ideal states became 83%. Works with the sampler; lightweight calibration.</span></div></li>
-              <li data-c="mit"><div class="node"><button class="leaf"><span class="tw">·</span>T-Rex (twirled readout error extinction)</button><span class="tags"><span class="badge n">NEITHER</span></span><span class="desc">Randomise the measurement basis with Paulis before readout, undo classically, then rescale with calibration circuits. Removes the asymmetric bias (1→0 more often than 0→1). Default resilience level 1 in Qiskit Runtime's estimator. Cannot be stacked naively with M3.</span></div></li>
-            </ul>
-          </li>
-          <li data-c="mit"><div class="node"><button aria-expanded="false"><span class="tw">▸</span>Gate-noise mitigation</button><span class="desc">Targets errors inside the circuit.</span></div>
-            <ul hidden>
-              <li data-c="mit"><div class="node"><button class="leaf"><span class="tw">·</span>ZNE (zero-noise extrapolation)</button><span class="tags"><span class="badge n">NEITHER</span></span><span class="desc">Run the circuit at noise levels 1, 3, 5 (gate folding G G† G, or probabilistic error amplification) and extrapolate to zero. Cost ≈ k × shots. Assumes the observable depends smoothly on noise. GHZ example: 17% error → 4% by hand, 0.987 with Runtime's variance-aware fit (resilience level 2). Combine with twirling and readout mitigation; not with PEC.</span></div></li>
-              <li data-c="mit"><div class="node"><button class="leaf"><span class="tw">·</span>PEC (probabilistic error cancellation)</button><span class="tags"><span class="badge n">NEITHER</span></span><span class="desc">Learn the noise channel per layer, build its inverse as a quasi-probability mix of physical operations, sample it and weight results by sign. Unbiased but shots scale like γ², exponential in depth. Most accurate in the series (0.667 vs ideal 0.665) but needs an accurate noise model and shallow circuits. Not combinable with ZNE.</span></div></li>
-            </ul>
-          </li>
-          <li data-c="mit"><div class="node"><button aria-expanded="false"><span class="tw">▸</span>Propagation-based (Ep 6)</button><span class="desc">Move the problem into the observable instead of the circuit.</span></div>
-            <ul hidden>
-              <li data-c="mit"><div class="node"><button class="leaf"><span class="tw">·</span>Operator back-propagation (OBP)</button><span class="tags"><span class="badge n">NEITHER</span></span><span class="desc">Absorb the last circuit layers into the measured observable: shorter circuit, more complex observable, more sampling.</span></div></li>
-              <li data-c="mit"><div class="node"><button class="leaf"><span class="tw">·</span>Propagated noise absorption (PNA)</button><span class="tags"><span class="badge n">NEITHER</span></span><span class="desc">Propagate a learned noise model into the observable so that measuring the modified observable on noisy hardware mitigates gate noise.</span></div></li>
-            </ul>
-          </li>
-        </ul>
-      </li>
-
-      <li data-c="det"><div class="node"><button aria-expanded="true"><span class="tw">▾</span>3. Error detection</button><span class="n">Ep 4</span><span class="tags"><span class="badge d">DETECT</span></span><span class="desc">Find out that an error happened. The response is <b>post-selection</b>: discard the shot. Key quantities: fidelity, post-selection rate, sampling overhead, detection region. A code with distance d detects any Pauli error of weight ≤ d − 1.</span></div>
-        <ul>
-          <li data-c="det"><div class="node"><button class="leaf"><span class="tw">·</span>Symmetry-based post-selection (parity, all-agree)</button><span class="tags"><span class="badge d">DETECT at final readout</span><span class="badge n">fix = discard</span></span><span class="desc">If the ideal output must obey a rule (even parity, or all bits equal for a GHZ state), reject outputs that break it. 10-qubit GHZ: raw 60% → 85% with parity → 100% with all-agree, at the price of fewer kept shots. Limits: the state is already collapsed, Z errors are invisible, and you must know the ideal output.</span></div></li>
-          <li data-c="det"><div class="node"><button class="leaf"><span class="tw">·</span>Stabilizer-based detection with ancillas</button><span class="tags"><span class="badge d">DETECT mid-circuit</span><span class="badge n">fix = discard</span></span><span class="desc">Copy parity (e.g. ZZ, or ZZZZ / XXXX for the 4-qubit logical Bell states) onto an ancilla with CNOTs and measure only the ancilla. Outcome −1 flags an error without collapsing the data. The ancilla outcomes are the <b>syndrome</b>. Misses errors above the distance and gives probabilistic answers for non-Pauli errors such as T1 decay.</span></div></li>
-          <li data-c="det"><div class="node"><button class="leaf"><span class="tw">·</span>Coherent Pauli checks (CPC)</button><span class="tags"><span class="badge d">DETECT around a payload</span><span class="badge n">fix = discard</span></span><span class="desc">Check a Pauli R after a circuit region U and L = U†RU before it; the two must agree. Found by operator back-propagation through U. Needs no knowledge of the state, only of U. Detects any error in the region that anticommutes with the check.</span></div></li>
-          <li data-c="det"><div class="node"><button class="leaf"><span class="tw">·</span>Space-time codes</button><span class="tags"><span class="badge d">DETECT + locate</span><span class="badge n">fix = discard</span></span><span class="desc">Push L back to the all-zero start (stabilised by all-Z) and propagate forward classically. Catches errors in the first layers and tells you which qubit and which layer. Only a head start: propagating through the whole circuit classically would make the quantum computer unnecessary.</span></div></li>
-        </ul>
-      </li>
-
-      <li data-c="cor"><div class="node"><button aria-expanded="true"><span class="tw">▾</span>4. Error correction</button><span class="n">Ep 5</span><span class="tags"><span class="badge d">DETECT</span><span class="badge c">CORRECT</span></span><span class="desc">The harder question: not "did something go wrong" but "what most likely went wrong". Four steps in every code: <b>encode</b> (spread one logical qubit over many physical with CNOTs) → <b>syndrome</b> (ancilla parity checks, the DETECT step) → <b>decode</b> (classical inference) → <b>recover</b> (apply the fix and keep computing, the CORRECT step). Needs d ≥ 2t + 1 to correct t errors, roughly twice the redundancy of detection. Below a <b>threshold</b> error rate, bigger codes help; above it they hurt.</span></div>
-        <ul>
-          <li data-c="cor"><div class="node"><button aria-expanded="false"><span class="tw">▸</span>Repetition code (3-qubit)</button><span class="tags"><span class="badge d">DETECT: 2 parity ancillas</span><span class="badge c">CORRECT: majority vote</span></span><span class="desc">Encode |ψ⟩ → α|000⟩+β|111⟩. Ancilla 0 checks q0⊕q1, ancilla 1 checks q1⊕q2; the pattern (10, 11, 01) names the flipped qubit. Logical error 3p² − 2p³, so it helps only for p &lt; 1/2. Bit flips only; the teaching example for the four steps.</span></div>
-            <ul hidden>
-              <li data-c="cor"><div class="node"><button class="leaf"><span class="tw">·</span>Decoder: lookup table / majority vote</button><span class="desc">Syndrome → qubit to flip. Fails when two or more qubits flip.</span></div></li>
-            </ul>
-          </li>
-          <li data-c="cor"><div class="node"><button aria-expanded="false"><span class="tw">▸</span>Surface code</button><span class="tags"><span class="badge d">DETECT: weight-4 X and Z checks</span><span class="badge c">CORRECT: close the chain</span></span><span class="desc">Data qubits on a square lattice, ancillas on faces (Z checks) and vertices (X checks), nearest-neighbour gates only, no SWAPs. A single error fires two adjacent checks; a chain of errors fires only its endpoints, and the decoder connects them by the most likely (shortest) path. Any closed loop is a product of stabilizers, so a wrong-but-equivalent chain still corrects. Threshold ≈ 1%; logical error ∝ (p/p_th)^((d+1)/2); cost ≈ (2d+1)² qubits per logical qubit, about 1000 for d ≈ 21 at p = 10⁻³. Bravyi–Poulin–Terhal bound limits all 2D local codes this way.</span></div>
-            <ul hidden>
-              <li data-c="cor"><div class="node"><button class="leaf"><span class="tw">·</span>Logical operators: lines across the grid</button><span class="desc">A row of X's commutes with every check and is a logical X; a column of Z's is a logical Z. A line of <em>errors</em> across the grid is therefore an undetectable logical error; its length is the distance d.</span></div></li>
-              <li data-c="cor"><div class="node"><button class="leaf"><span class="tw">·</span>Decoder: most-likely chain (matching)</button><span class="desc">Pair up fired checks by shortest paths; the standard choice because short chains are more probable than long ones.</span></div></li>
-            </ul>
-          </li>
-          <li data-c="cor"><div class="node"><button aria-expanded="false"><span class="tw">▸</span>QLDPC codes</button><span class="tags"><span class="badge d">DETECT: low-weight checks</span><span class="badge c">CORRECT: BP-type decoders</span></span><span class="desc">Keep few-qubit parity checks but drop the planar nearest-neighbour rule. Finite rate: logical qubits grow in proportion to physical qubits, which the surface code cannot do. Price: long-range connectivity and harder decoding.</span></div>
-            <ul hidden>
-              <li data-c="cor"><div class="node"><button class="leaf"><span class="tw">·</span>Toric code</button><span class="desc">Surface code rolled into a torus: no boundaries, translation-invariant. Loops that wrap the torus are logical operators (or logical errors). A connectivity model, not a physical donut.</span></div></li>
-              <li data-c="cor"><div class="node"><button class="leaf"><span class="tw">·</span>Bivariate bicycle (BB) code: gross code [[144,12,12]]</button><span class="desc">IBM's code; checks distributed by a Tanner graph with long-range links. 144 data qubits store 12 logical qubits at distance 12, about an order of magnitude better than the surface code on k·d²/n. Trade-offs: decoding complexity and the hardware for non-local checks.</span></div></li>
-            </ul>
-          </li>
-          <li data-c="cor"><div class="node"><button class="leaf"><span class="tw">·</span>Magic states (for non-Clifford gates)</button><span class="tags"><span class="badge n">enables computation</span></span><span class="desc">Stabilizer codes handle Clifford gates natively, but Cliffords alone are classically simulable. A T gate needs a magic state prepared outside the code, injected with CNOTs + measurement + conditional correction, and first purified by magic state distillation (a "factory"), because raw magic states are far noisier than the 10⁻¹² target.</span></div></li>
-        </ul>
-      </li>
-
-      <li data-c="tool"><div class="node"><button aria-expanded="false"><span class="tw">▸</span>Tools that orchestrate all of the above</button><span class="n">Ep 6</span><span class="tags"><span class="badge n">workflow</span></span><span class="desc">The directed execution model: label circuit layers, learn noise once per unique layer, apply different strategies to different regions.</span></div>
-        <ul hidden>
-          <li data-c="tool"><div class="node"><button class="leaf"><span class="tw">·</span>Samplomatic (template circuit + samplex)</button><span class="desc">Boxes the circuit, lets you declare twirling / noise injection per box, generates circuit variants and post-processing instructions. The "recipe".</span></div></li>
-          <li data-c="tool"><div class="node"><button class="leaf"><span class="tw">·</span>Executor</button><span class="desc">Runs template + samplex and returns samples. The "chef".</span></div></li>
-          <li data-c="tool"><div class="node"><button class="leaf"><span class="tw">·</span>Noise Learner V3 + noise injection</button><span class="desc">Learns Pauli–Lindblad models per boxed layer (and T-Rex for measurements); the learned model can be injected back for PEA/PEC.</span></div></li>
-          <li data-c="tool"><div class="node"><button class="leaf"><span class="tw">·</span>Shaded light cones (SLC)</button><span class="desc">Maps where in space-time an X, Y or Z error would actually affect a low-weight observable, so expensive mitigation (PEC) is spent only where it matters.</span></div></li>
-          <li data-c="tool"><div class="node"><button class="leaf"><span class="tw">·</span>AQC Tensor, MPF, circuit cutting, mappers</button><span class="desc">Build and shorten circuits before any error handling: replace early layers with a shallower approximation, better Trotter formulas, split big circuits, map chemistry and optimisation problems to qubits.</span></div></li>
-        </ul>
-      </li>
-    </ul>
-  </li>
-  </ul>
-  </div>
+    <p class="sub">Every method grows from one root: quantum noise. Click a branch with + to open it, and click any node to read about it in the panel.</p>
+    <div class="controls"><button id="openAll" type="button">Open all branches</button><button id="closeAll" type="button">Close to main branches</button></div>
+    <div class="tv">
+      <div class="tv-scroll"><div class="tv-canvas" id="tv"><svg class="tv-links" id="tvLinks" aria-hidden="true"></svg></div></div>
+      <aside class="tv-panel" id="tvPanel" aria-live="polite">
+        <p class="tv-hint">Click any node in the tree to read about it here.</p>
+      </aside>
+    </div>
   </section>
 
   <section>
@@ -259,23 +205,69 @@ footer{border-top:1px solid var(--line); padding:24px 0 40px; font-size:14px; co
   <footer>© <span id="yr">2026</span> Abdullah · <a href="./">Back to Quantum Computing</a></footer>
 </div>
 
+<script>document.getElementById('yr').textContent=new Date().getFullYear();</script>
 <script>
+const TREE = {"label": "Quantum noise and errors", "cat": "noise", "ep": "Ep 1", "tags": "", "desc": "<b>Noise</b> is the physical disturbance (thermal, crosstalk, imperfect pulses); an <b>error</b> is the wrong step it causes. Unlike a classical bit, a qubit can drift by any continuous amount in amplitude and phase. Noise is modelled by quantum channels: amplitude damping (T1), dephasing (T2), and the Pauli channel (X, Y, Z with probabilities). Everything below is a way to live with it.", "children": [{"label": "Kinds of error", "cat": "noise", "ep": "", "tags": "<span class=\"badge n\">context</span>", "desc": "", "children": [{"label": "By stage: preparation, gates, readout (SPAM vs circuit)", "cat": "noise", "ep": "", "tags": "", "desc": "SPAM errors are handled separately from errors inside the circuit; the two toolsets do not interfere.", "children": []}, {"label": "By accumulation: coherent vs incoherent", "cat": "noise", "ep": "", "tags": "", "desc": "Coherent = an unwanted unitary (over-rotation), adds up fast. Incoherent = a non-unitary channel, adds in quadrature. A recurring theme: convert coherent into incoherent.", "children": []}, {"label": "By channel: T1 relaxation, dephasing, Pauli", "cat": "noise", "ep": "", "tags": "", "desc": "T1 on IBM hardware is a few hundred µs, while two-qubit gates take from tens of nanoseconds up to about 100 ns, so idle time matters more than gate count for relaxation. Pauli channels can be created deliberately, which later methods exploit.", "children": []}]}, {"label": "1. Error suppression", "cat": "sup", "ep": "Ep 2", "tags": "<span class=\"badge n\">NEITHER</span>", "desc": "Change the circuit so errors occur less, differently, or accumulate less. Happens <b>while the circuit runs</b>, by inserting extra single-qubit gates. No error is ever detected or corrected.", "children": [{"label": "Dynamical decoupling (XX, XY4, XY8)", "cat": "sup", "ep": "", "tags": "<span class=\"badge n\">NEITHER</span>", "desc": "Insert X (or XY) pulses during idle time so unknown phase drift in the first half is undone in the second half. Works like a frequency filter on the noise. Best for long idle periods; for short idles it can lower fidelity because the inserted gates have their own error. Example: fidelity after 100 two-qubit-gate durations, 0.58 without DD, 0.83 with.", "children": []}, {"label": "Pauli twirling", "cat": "sup", "ep": "", "tags": "<span class=\"badge n\">NEITHER</span>", "desc": "Wrap each two-qubit gate in random Paulis chosen so the logical effect is unchanged. On average this turns any noise channel into a Pauli channel: errors become classical randomness over X, Y, Z instead of coherent build-up. Often called error <em>shaping</em> rather than suppression, and it is what makes ZNE and PEC predictable.", "children": []}]}, {"label": "2. Error mitigation", "cat": "mit", "ep": "Ep 3", "tags": "<span class=\"badge n\">NEITHER</span>", "desc": "Accept that the state is noisy; build a better <b>estimator</b> of the ideal expectation value from many noisy shots. Happens <b>after measurement</b>, in classical post-processing plus extra circuit variants. No individual error is seen or fixed, and the quantum state is not improved.", "children": [{"label": "Readout mitigation", "cat": "mit", "ep": "", "tags": "", "desc": "Targets the measurement step only.", "children": [{"label": "M3 (matrix-free measurement mitigation)", "cat": "mit", "ep": "", "tags": "<span class=\"badge n\">NEITHER</span>", "desc": "Learn how readouts are misassigned, but only on the subspace of bitstrings actually observed (31 × 31 instead of 2¹⁰ × 2¹⁰ in the GHZ example), then invert. Raw 66% of shots in the ideal states became 83%. Works with the sampler; lightweight calibration.", "children": []}, {"label": "T-Rex (twirled readout error extinction)", "cat": "mit", "ep": "", "tags": "<span class=\"badge n\">NEITHER</span>", "desc": "Randomise the measurement basis with Paulis before readout, undo classically, then rescale with calibration circuits. Removes the asymmetric bias (1→0 more often than 0→1). Default resilience level 1 in Qiskit Runtime's estimator. Cannot be stacked naively with M3.", "children": []}]}, {"label": "Gate-noise mitigation", "cat": "mit", "ep": "", "tags": "", "desc": "Targets errors inside the circuit.", "children": [{"label": "ZNE (zero-noise extrapolation)", "cat": "mit", "ep": "", "tags": "<span class=\"badge n\">NEITHER</span>", "desc": "Run the circuit at noise levels 1, 3, 5 (gate folding G G† G, or probabilistic error amplification) and extrapolate to zero. Cost ≈ k × shots. Assumes the observable depends smoothly on noise. GHZ example: 17% error → 4% by hand, 0.987 with Runtime's variance-aware fit (resilience level 2). Combine with twirling and readout mitigation; not with PEC.", "children": []}, {"label": "PEC (probabilistic error cancellation)", "cat": "mit", "ep": "", "tags": "<span class=\"badge n\">NEITHER</span>", "desc": "Learn the noise channel per layer, build its inverse as a quasi-probability mix of physical operations, sample it and weight results by sign. Unbiased but shots scale like γ², exponential in depth. Most accurate in the series (0.667 vs ideal 0.665) but needs an accurate noise model and shallow circuits. Not combinable with ZNE.", "children": []}]}, {"label": "Propagation-based (Ep 6)", "cat": "mit", "ep": "", "tags": "", "desc": "Move the problem into the observable instead of the circuit.", "children": [{"label": "Operator back-propagation (OBP)", "cat": "mit", "ep": "", "tags": "<span class=\"badge n\">NEITHER</span>", "desc": "Absorb the last circuit layers into the measured observable: shorter circuit, more complex observable, more sampling.", "children": []}, {"label": "Propagated noise absorption (PNA)", "cat": "mit", "ep": "", "tags": "<span class=\"badge n\">NEITHER</span>", "desc": "Propagate a learned noise model into the observable so that measuring the modified observable on noisy hardware mitigates gate noise.", "children": []}]}]}, {"label": "3. Error detection", "cat": "det", "ep": "Ep 4", "tags": "<span class=\"badge d\">DETECT</span>", "desc": "Find out that an error happened. The response is <b>post-selection</b>: discard the shot. Key quantities: fidelity, post-selection rate, sampling overhead, detection region. A code with distance d detects any Pauli error of weight ≤ d − 1.", "children": [{"label": "Symmetry-based post-selection (parity, all-agree)", "cat": "det", "ep": "", "tags": "<span class=\"badge d\">DETECT at final readout</span><span class=\"badge n\">fix = discard</span>", "desc": "If the ideal output must obey a rule (even parity, or all bits equal for a GHZ state), reject outputs that break it. 10-qubit GHZ: raw 60% → 85% with parity → 100% with all-agree, at the price of fewer kept shots. Limits: the state is already collapsed, Z errors are invisible, and you must know the ideal output.", "children": []}, {"label": "Stabilizer-based detection with ancillas", "cat": "det", "ep": "", "tags": "<span class=\"badge d\">DETECT mid-circuit</span><span class=\"badge n\">fix = discard</span>", "desc": "Copy parity (e.g. ZZ, or ZZZZ / XXXX for the 4-qubit logical Bell states) onto an ancilla with CNOTs and measure only the ancilla. Outcome −1 flags an error without collapsing the data. The ancilla outcomes are the <b>syndrome</b>. Misses errors above the distance and gives probabilistic answers for non-Pauli errors such as T1 decay.", "children": []}, {"label": "Coherent Pauli checks (CPC)", "cat": "det", "ep": "", "tags": "<span class=\"badge d\">DETECT around a payload</span><span class=\"badge n\">fix = discard</span>", "desc": "Check a Pauli R after a circuit region U and L = U†RU before it; the two must agree. Found by operator back-propagation through U. Needs no knowledge of the state, only of U. Detects any error in the region that anticommutes with the check.", "children": []}, {"label": "Space-time codes", "cat": "det", "ep": "", "tags": "<span class=\"badge d\">DETECT + locate</span><span class=\"badge n\">fix = discard</span>", "desc": "Push L back to the all-zero start (stabilised by all-Z) and propagate forward classically. Catches errors in the first layers and tells you which qubit and which layer. Only a head start: propagating through the whole circuit classically would make the quantum computer unnecessary.", "children": []}]}, {"label": "4. Error correction", "cat": "cor", "ep": "Ep 5", "tags": "<span class=\"badge d\">DETECT</span><span class=\"badge c\">CORRECT</span>", "desc": "The harder question: not \"did something go wrong\" but \"what most likely went wrong\". Four steps in every code: <b>encode</b> (spread one logical qubit over many physical with CNOTs) → <b>syndrome</b> (ancilla parity checks, the DETECT step) → <b>decode</b> (classical inference) → <b>recover</b> (apply the fix and keep computing, the CORRECT step). Needs d ≥ 2t + 1 to correct t errors, roughly twice the redundancy of detection. Below a <b>threshold</b> error rate, bigger codes help; above it they hurt.", "children": [{"label": "Repetition code (3-qubit)", "cat": "cor", "ep": "", "tags": "<span class=\"badge d\">DETECT: 2 parity ancillas</span><span class=\"badge c\">CORRECT: majority vote</span>", "desc": "Encode |ψ⟩ → α|000⟩+β|111⟩. Ancilla 0 checks q0⊕q1, ancilla 1 checks q1⊕q2; the pattern (10, 11, 01) names the flipped qubit. Logical error 3p² − 2p³, so it helps only for p &lt; 1/2. Bit flips only; the teaching example for the four steps.", "children": [{"label": "Decoder: lookup table / majority vote", "cat": "cor", "ep": "", "tags": "", "desc": "Syndrome → qubit to flip. Fails when two or more qubits flip.", "children": []}]}, {"label": "Surface code", "cat": "cor", "ep": "", "tags": "<span class=\"badge d\">DETECT: weight-4 X and Z checks</span><span class=\"badge c\">CORRECT: close the chain</span>", "desc": "Data qubits on a square lattice, ancillas on faces (Z checks) and vertices (X checks), nearest-neighbour gates only, no SWAPs. A single error fires two adjacent checks; a chain of errors fires only its endpoints, and the decoder connects them by the most likely (shortest) path. Any closed loop is a product of stabilizers, so a wrong-but-equivalent chain still corrects. Threshold ≈ 1%; logical error ∝ (p/p_th)^((d+1)/2); cost ≈ (2d+1)² qubits per logical qubit, about 1000 for d ≈ 21 at p = 10⁻³. Bravyi–Poulin–Terhal bound limits all 2D local codes this way.", "children": [{"label": "Logical operators: lines across the grid", "cat": "cor", "ep": "", "tags": "", "desc": "A row of X's commutes with every check and is a logical X; a column of Z's is a logical Z. A line of <em>errors</em> across the grid is therefore an undetectable logical error; its length is the distance d.", "children": []}, {"label": "Decoder: most-likely chain (matching)", "cat": "cor", "ep": "", "tags": "", "desc": "Pair up fired checks by shortest paths; the standard choice because short chains are more probable than long ones.", "children": []}]}, {"label": "QLDPC codes", "cat": "cor", "ep": "", "tags": "<span class=\"badge d\">DETECT: low-weight checks</span><span class=\"badge c\">CORRECT: BP-type decoders</span>", "desc": "Keep few-qubit parity checks but drop the planar nearest-neighbour rule. Finite rate: logical qubits grow in proportion to physical qubits, which the surface code cannot do. Price: long-range connectivity and harder decoding.", "children": [{"label": "Toric code", "cat": "cor", "ep": "", "tags": "", "desc": "Surface code rolled into a torus: no boundaries, translation-invariant. Loops that wrap the torus are logical operators (or logical errors). A connectivity model, not a physical donut.", "children": []}, {"label": "Bivariate bicycle (BB) code: gross code [[144,12,12]]", "cat": "cor", "ep": "", "tags": "", "desc": "IBM's code; checks distributed by a Tanner graph with long-range links. 144 data qubits store 12 logical qubits at distance 12, about an order of magnitude better than the surface code on k·d²/n. Trade-offs: decoding complexity and the hardware for non-local checks.", "children": []}]}, {"label": "Magic states (for non-Clifford gates)", "cat": "cor", "ep": "", "tags": "<span class=\"badge n\">enables computation</span>", "desc": "Stabilizer codes handle Clifford gates natively, but Cliffords alone are classically simulable. A T gate needs a magic state prepared outside the code, injected with CNOTs + measurement + conditional correction, and first purified by magic state distillation (a \"factory\"), because raw magic states are far noisier than the 10⁻¹² target.", "children": []}]}, {"label": "Tools that orchestrate all of the above", "cat": "tool", "ep": "Ep 6", "tags": "<span class=\"badge n\">workflow</span>", "desc": "The directed execution model: label circuit layers, learn noise once per unique layer, apply different strategies to different regions.", "children": [{"label": "Samplomatic (template circuit + samplex)", "cat": "tool", "ep": "", "tags": "", "desc": "Boxes the circuit, lets you declare twirling / noise injection per box, generates circuit variants and post-processing instructions. The \"recipe\".", "children": []}, {"label": "Executor", "cat": "tool", "ep": "", "tags": "", "desc": "Runs template + samplex and returns samples. The \"chef\".", "children": []}, {"label": "Noise Learner V3 + noise injection", "cat": "tool", "ep": "", "tags": "", "desc": "Learns Pauli–Lindblad models per boxed layer (and T-Rex for measurements); the learned model can be injected back for PEA/PEC.", "children": []}, {"label": "Shaded light cones (SLC)", "cat": "tool", "ep": "", "tags": "", "desc": "Maps where in space-time an X, Y or Z error would actually affect a low-weight observable, so expensive mitigation (PEC) is spent only where it matters.", "children": []}, {"label": "AQC Tensor, MPF, circuit cutting, mappers", "cat": "tool", "ep": "", "tags": "", "desc": "Build and shorten circuits before any error handling: replace early layers with a shallower approximation, better Trotter formulas, split big circuits, map chemistry and optimisation problems to qubits.", "children": []}]}]};
 (function(){
-  const tree=document.getElementById('tree');
-  const setNode=(btn,o)=>{ const ul=btn.closest('li').querySelector(':scope > ul'); if(!ul) return;
-    btn.setAttribute('aria-expanded',String(o)); ul.hidden=!o; btn.querySelector('.tw').textContent=o?'▾':'▸'; };
-  tree.querySelectorAll('button[aria-expanded]').forEach(btn=>{
-    btn.addEventListener('click',()=>setNode(btn, btn.getAttribute('aria-expanded')!=='true'));
-  });
-  function setAll(open,depthLimit){
-    tree.querySelectorAll('button[aria-expanded]').forEach(btn=>{
-      let depth=0,p=btn.closest('li'); while((p=p.parentElement.closest('li'))) depth++;
-      setNode(btn, open || depth<depthLimit);
-    });
+  const COLORS={noise:'var(--noise)',sup:'var(--sup)',mit:'var(--mit)',det:'var(--det)',cor:'var(--cor)',tool:'var(--tool)'};
+  const canvas=document.getElementById('tv'), svg=document.getElementById('tvLinks'), panel=document.getElementById('tvPanel');
+  let id=0;
+  (function prep(n,depth,parent){ n.id=id++; n.depth=depth; n.parent=parent; n.open=depth<1;
+    n.children.forEach(c=>prep(c,depth+1,n)); })(TREE,0,null);
+  // open the four strategy branches by default, but not their sub-branches
+  TREE.open=true;
+  let selected=null;
+  const GAP=28, NODE_H=56, ROW=66;
+  const NODE_W=()=> Math.max(150, Math.floor((canvas.parentElement.clientWidth-40-3*GAP)/4));
+  const COL=()=>NODE_W()+GAP;
+
+  function layout(){
+    let row=0; const vis=[];
+    (function place(n){
+      vis.push(n);
+      const kids=n.open?n.children:[];
+      if(!kids.length){ n.y=row*ROW; row++; }
+      else { kids.forEach(place); n.y=(kids[0].y+kids[kids.length-1].y)/2; }
+      n.x=n.depth*COL();
+    })(TREE);
+    return {vis, rows:row};
   }
-  document.getElementById('openAll').onclick=()=>setAll(true,0);
-  document.getElementById('closeAll').onclick=()=>setAll(false,1);
-  document.getElementById('yr').textContent=new Date().getFullYear();
+  function render(){
+    const {vis,rows}=layout();
+    const W=3*COL()+NODE_W(), H=Math.max(rows*ROW-ROW+NODE_H, NODE_H);
+    canvas.style.width=W+'px'; canvas.style.height=H+'px';
+    svg.setAttribute('width',W); svg.setAttribute('height',H);
+    canvas.querySelectorAll('.tv-node').forEach(el=>el.remove());
+    let paths='';
+    vis.forEach(n=>{
+      if(n.parent){
+        const p=n.parent, x1=p.x+NODE_W(), y1=p.y+NODE_H/2, x2=n.x, y2=n.y+NODE_H/2, mx=(x1+x2)/2;
+        paths+=`<path d="M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}" stroke="${COLORS[n.cat]}"/>`;
+      }
+      const b=document.createElement('button');
+      b.type='button'; b.className='tv-node'+(n.depth===0?' root':'')+(selected===n?' sel':'');
+      b.style.cssText=`left:${n.x}px; top:${n.y}px; width:${NODE_W()}px; height:${NODE_H}px; --c:${COLORS[n.cat]}`;
+      const has=n.children.length>0;
+      b.innerHTML=`<span class="lbl"></span>`+(has?`<span class="tg">${n.open?'−':'+'}</span>`:`<span class="dot"></span>`);
+      b.querySelector('.lbl').textContent=n.label;
+      b.title=n.label;
+      if(has) b.setAttribute('aria-expanded',String(n.open));
+      b.addEventListener('click',()=>{ if(has) n.open=!n.open; selected=n; show(n); render(); });
+      canvas.appendChild(b);
+    });
+    svg.innerHTML=paths;
+  }
+  function show(n){
+    const trail=[]; let p=n.parent; while(p){ trail.unshift(p.label); p=p.parent; }
+    panel.innerHTML=(trail.length?`<p class="path">${trail.join(' › ')}</p>`:'')+
+      `<h3></h3><div class="meta">${n.ep?`<span class="ep">${n.ep}</span>`:''}${n.tags}</div><div class="dtxt">${n.desc||'<span class="tv-hint">This branch groups the methods below it. Open it to see them.</span>'}</div>`;
+    panel.querySelector('h3').textContent=n.label;
+  }
+  function setAll(open){ (function w(n){ n.open = open ? true : n.depth<1; n.children.forEach(w); })(TREE); render(); }
+  document.getElementById('openAll').onclick=()=>setAll(true);
+  document.getElementById('closeAll').onclick=()=>setAll(false);
+  addEventListener('resize',render);
+  render();
 })();
 </script>
 </body>
